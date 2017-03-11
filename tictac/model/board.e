@@ -31,6 +31,7 @@ feature {NONE} -- Initialization
 			previous_first_mover := player_two.get_piece
 			status_message := "ok"
 			redo_allowed := false
+			game_in_play := false
 			moves_made := 0
 
 			move_list.force (dummy_player, 0, "ok")								-- initializing move
@@ -49,6 +50,7 @@ feature {BOARD} -- board attributes
 	previous_first_mover: STRING												-- the piece of the person who went first last round
 	moves_made: INTEGER															-- holds the number of moves made
 	start_of_new_game: BOOLEAN
+	play_barrier: INTEGER
 
 feature -- User Commands
 
@@ -67,6 +69,7 @@ feature -- User Commands
 			next_player := player_one
 			previous_first_mover := player_one.get_piece
 			moves_made := 0
+			play_barrier := move_list.index
 
 			status_flag(0)
 		end
@@ -85,6 +88,7 @@ feature -- User Commands
 			game_won := false
 			start_of_new_game := false
 			moves_made := 0
+			play_barrier := move_list.index
 
 			if previous_first_mover ~ player_one.get_piece then
 				next_player := player_two
@@ -129,16 +133,20 @@ feature -- User Commands
 
 	undo
 		do
-			if move_list.index > 1 and game_in_play then
-				if move_list.item.position /= 0 then
-					moves_made := moves_made - 1
-					next_player := move_list.item.player
+			if move_list.index > 1 then
+				if game_in_play and move_list.index - 1 >= play_barrier then
+					if move_list.item.position /= 0 then
+						moves_made := moves_made - 1
+						next_player := move_list.item.player
+					end
+					move_list.back
+					redo_allowed := true
+				elseif not game_in_play then
+					move_list.back
+					redo_allowed := true
 				end
-				move_list.back
-				redo_allowed := true
-				if move_list.item.position /= 0 then
-					status_flag(0)
-				end
+			else
+				status_flag(0)
 			end
 		end
 
@@ -160,7 +168,6 @@ feature -- Defensive Queries
 
 	is_valid_move (a_move: INTEGER): BOOLEAN
 		do
-			--Result := true
 			if a_move >= 1 and a_move <= 9 then
 				Result := across move_list as m all m.item.position /= a_move end
 			else
@@ -273,7 +280,6 @@ feature {BOARD} -- Hidden Commands
 				game_in_play := false
 
 				status_flag(6)
---			elseif board_full (tiles) then
 			elseif moves_made = 9 then
 				game_won := true
 				game_in_play := false
@@ -299,11 +305,6 @@ feature {BOARD} -- Hidden Commands
 					Result := tiles[9]
 			end
 		end
-
---	board_full (board: ARRAY[STRING]): BOOLEAN
---		do
---			Result := across board as tile all tile.item /~ "" end
---		end
 
 feature {BOARD} -- Hidden Queries
 
