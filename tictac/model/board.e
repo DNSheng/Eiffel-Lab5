@@ -135,19 +135,20 @@ feature -- Defensive Queries
 			i: INTEGER
 			stop: BOOLEAN
 		do
-			Result := true
+			--Result := true
 			if a_move >= 1 and a_move <= 9 then
-				from
-					i := 1
-				until
-					i = move_list.index or stop
-				loop
-					if move_list[i].position = a_move then
-						Result := false
-						stop := true
-					end
-					i := i + 1
-				end
+				Result := across move_list as m all m.item.position /= a_move end
+--				from
+--					i := 1
+--				until
+--					i = move_list.count or stop
+--				loop
+--					if move_list[i].position = a_move then
+--						Result := false
+--						stop := true
+--					end
+--					i := i + 1
+--				end
 			else
 				Result := false
 			end
@@ -296,17 +297,18 @@ feature {BOARD} -- Hidden Commands
 			i: INTEGER
 			full: BOOLEAN
 		do
-			from
-				i := 1
-			until
-				i > board.capacity or not full
-			loop
-				if board[i] ~ "" then
-					full := false
-				end
-				i := i + 1
-			end
-			Result := full
+			Result := across board as tile all tile.item /~ "" end
+--			from
+--				i := 1
+--			until
+--				i > board.capacity or not full
+--			loop
+--				if board[i] ~ "" then
+--					full := false
+--				end
+--				i := i + 1
+--			end
+--			Result := full
 		end
 
 feature {BOARD} -- Hidden Queries
@@ -334,6 +336,8 @@ feature {BOARD} -- Hidden Queries
 			create Result.make_from_string ("")
 			Result.append (": => ")
 			if player_one.get_name ~ "" then
+				Result.make_from_string ("")
+				Result.append (":  => ")
 				Result.append ("start new game%N  ")
 			elseif game_won = true then
 				Result.append ("play again or start new game%N  ")
