@@ -3,8 +3,9 @@
 ToDo:
 
 	- Double check undo and redo
-		- Fix undo accidentally going past game condition
-	
-	- Change how "next_player" works, as it alternates between games
+		- Expand to 2 scenarios:
+			- Before game undo and redo (traverse error history)
+			- In game undo (traverse errors and moves)
+				- Make sure not to blow past to before game start
 
-	- Acceptance tests
+	- Pass acceptance tests

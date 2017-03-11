@@ -19,8 +19,10 @@ feature -- command
 			-- perform some update on the model state
 			if player1 ~ player2 then
 				model.status_flag (1)
+				model.invalid_command (model.get_status_message)
 			elseif not model.is_alpha_name (player1) or not model.is_alpha_name (player2) then
 				model.status_flag (2)
+				model.invalid_command (model.get_status_message)
 			else
 				model.new_game (player1, player2)
 			end

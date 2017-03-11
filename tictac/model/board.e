@@ -28,9 +28,10 @@ feature {NONE} -- Initialization
 			create dummy_player.make ("", "", 0)
 			create {ARRAYED_LIST[TUPLE [player: PLAYER; position: INTEGER; status: STRING]]} move_list.make (0)
 
-			last_first_player := player_one.get_piece
+			previous_first_mover := player_two.get_piece
 			status_message := "ok"
 			redo_allowed := false
+			moves_made := 0
 
 			move_list.force (dummy_player, 0, "ok")								-- initializing move
 			move_list.forth
@@ -45,22 +46,28 @@ feature {BOARD} -- board attributes
 	status_message: STRING														-- stores status message to output
 	redo_allowed: BOOLEAN														-- allows redo operations
 	game_won: BOOLEAN															-- checks if game won, used for undo and win condition/prompts
-	last_first_player: STRING
+	previous_first_mover: STRING												-- the piece of the person who went first last round
+	moves_made: INTEGER															-- holds the number of moves made
+	start_of_new_game: BOOLEAN
 
 feature -- User Commands
 
 	new_game (a_player_one_name: STRING; a_player_two_name: STRING)
 		do
-			if game_won then
-				reset
-			end
+			if game_won then reset end
+
 			player_one.change_name (a_player_one_name)
 			player_one.reset_won
 			player_two.change_name (a_player_two_name)
 			player_two.reset_won
+
 			game_won := false
 			game_in_play := true
+			start_of_new_game := true
 			next_player := player_one
+			previous_first_mover := player_one.get_piece
+			moves_made := 0
+
 			status_flag(0)
 		end
 
@@ -76,11 +83,17 @@ feature -- User Commands
 			redo_allowed := false
 			game_in_play := true
 			game_won := false
-			if last_first_player ~ player_one.get_piece then
+			start_of_new_game := false
+			moves_made := 0
+
+			if previous_first_mover ~ player_one.get_piece then
 				next_player := player_two
+				previous_first_mover := player_two.get_piece
 			else
 				next_player := player_one
+				previous_first_mover := player_one.get_piece
 			end
+
 			status_flag(0)
 		end
 
@@ -108,6 +121,8 @@ feature -- User Commands
 			end
 
 			redo_allowed := false
+			start_of_new_game := false
+			moves_made := moves_made + 1
 
 			check_for_win
 		end
@@ -115,9 +130,14 @@ feature -- User Commands
 	undo
 		do
 			if move_list.index > 1 and game_in_play then
+				if move_list.item.position /= 0 then
+					moves_made := moves_made - 1
+				end
 				move_list.back
 				redo_allowed := true
-				status_flag(0)
+				if move_list.item.position /= 0 then
+					status_flag(0)
+				end
 			end
 		end
 
@@ -125,37 +145,25 @@ feature -- User Commands
 		do
 			if redo_allowed and move_list.count >= move_list.index + 1 then
 				move_list.forth
+				if move_list.item.position /= 0 then
+					moves_made := moves_made + 1
+				end
 			end
 		end
 
 feature -- Defensive Queries
 
 	is_valid_move (a_move: INTEGER): BOOLEAN
-		local
-			i: INTEGER
-			stop: BOOLEAN
 		do
 			--Result := true
 			if a_move >= 1 and a_move <= 9 then
 				Result := across move_list as m all m.item.position /= a_move end
---				from
---					i := 1
---				until
---					i = move_list.count or stop
---				loop
---					if move_list[i].position = a_move then
---						Result := false
---						stop := true
---					end
---					i := i + 1
---				end
 			else
 				Result := false
 			end
 		end
 
 	is_their_turn (a_player_name: STRING): BOOLEAN
-		local
 		do
 			if move_list.count > move_list.index then
 				Result := a_player_name ~ print_opponent (move_list.item.player)
@@ -229,11 +237,6 @@ feature	-- status message queries
 
 feature {BOARD} -- Hidden Commands
 
---		Check after every move, invisible to other classes
---		Scan from 1..current_move in move_list
---		If someone won, increment their wins, turn game_in_play to false, game_won to true, call other invisible function
---		asking if they want to play again or new game
-
 	build_board: ARRAY[STRING]
 		-- Store each piece in an array, index in array matching index on board
 		local
@@ -265,13 +268,16 @@ feature {BOARD} -- Hidden Commands
 			winning_piece := compare_pieces (tiles)
 			if winning_piece /~ "" then
 				get_player_with_piece(winning_piece).win_game
+				game_won := true
+				game_in_play := false
+
 				status_flag(6)
+--			elseif board_full (tiles) then
+			elseif moves_made = 9 then
 				game_won := true
 				game_in_play := false
-			elseif board_full (tiles) then
+
 				status_flag(9)
-				game_won := true
-				game_in_play := false
 			end
 		end
 
@@ -292,24 +298,11 @@ feature {BOARD} -- Hidden Commands
 					Result := tiles[9]
 			end
 		end
-	board_full (board: ARRAY[STRING]): BOOLEAN
-		local
-			i: INTEGER
-			full: BOOLEAN
-		do
-			Result := across board as tile all tile.item /~ "" end
---			from
---				i := 1
---			until
---				i > board.capacity or not full
---			loop
---				if board[i] ~ "" then
---					full := false
---				end
---				i := i + 1
---			end
---			Result := full
-		end
+
+--	board_full (board: ARRAY[STRING]): BOOLEAN
+--		do
+--			Result := across board as tile all tile.item /~ "" end
+--		end
 
 feature {BOARD} -- Hidden Queries
 
@@ -342,10 +335,8 @@ feature {BOARD} -- Hidden Queries
 			elseif game_won = true then
 				Result.append ("play again or start new game%N  ")
 			else
-				if player_one.get_wins = 0 and player_two.get_wins = 0 and move_list.count = 1 then
+				if player_one.get_wins = 0 and player_two.get_wins = 0 and start_of_new_game then		-- new game
 					Result.append (player_one.get_name)
-				elseif move_list.item.status ~ "ok" then
-					Result.append (print_opponent (move_list.item.player))
 				else
 					Result.append (next_player.get_name)
 				end
@@ -371,7 +362,8 @@ feature {BOARD} -- Hidden Queries
 				Result := player_two.get_name
 			elseif a_player ~ player_two then
 				Result := player_one.get_name
-			elseif last_first_player ~ player_one.get_piece then
+			--PLAY_AGAIN
+			elseif previous_first_mover ~ player_one.get_piece then
 				Result := player_two.get_name
 			else
 				Result := player_one.get_name
