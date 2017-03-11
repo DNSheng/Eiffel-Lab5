@@ -142,7 +142,11 @@ feature -- User Commands
 					move_list.back
 					redo_allowed := true
 				elseif not game_in_play then
-					move_list.back
+					if move_list.index = 2 then
+						status_message := move_list.item.status
+					else
+						move_list.back
+					end
 					redo_allowed := true
 				end
 			else
