@@ -132,6 +132,7 @@ feature -- User Commands
 			if move_list.index > 1 and game_in_play then
 				if move_list.item.position /= 0 then
 					moves_made := moves_made - 1
+					next_player := move_list.item.player
 				end
 				move_list.back
 				redo_allowed := true
@@ -142,11 +143,15 @@ feature -- User Commands
 		end
 
 	redo
+		local
+			possible_next_player: PLAYER
 		do
 			if redo_allowed and move_list.count >= move_list.index + 1 then
+				possible_next_player := move_list.item.player
 				move_list.forth
 				if move_list.item.position /= 0 then
 					moves_made := moves_made + 1
+					next_player := possible_next_player
 				end
 			end
 		end
@@ -165,11 +170,7 @@ feature -- Defensive Queries
 
 	is_their_turn (a_player_name: STRING): BOOLEAN
 		do
-			if move_list.count > move_list.index then
-				Result := a_player_name ~ print_opponent (move_list.item.player)
-			else
-				Result := a_player_name ~ next_player.get_name
-			end
+			Result := a_player_name ~ next_player.get_name
 		end
 
 	player_exists (a_player_name: STRING): BOOLEAN
