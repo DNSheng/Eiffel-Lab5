@@ -105,6 +105,8 @@ feature -- User Commands
 		local
 			current_player: PLAYER
 			current_player_move: TUPLE[player: PLAYER; position: INTEGER; status: STRING]
+			current_index: INTEGER
+			temp_move_list: LIST[TUPLE [player: PLAYER; position: INTEGER; status: STRING]]
 		do
 			current_player := get_player_with_name (a_player_name)
 
@@ -127,6 +129,15 @@ feature -- User Commands
 			redo_allowed := false
 			start_of_new_game := false
 			moves_made := moves_made + 1
+
+			--Nuke everything past
+			if move_list.index < move_list.count then
+				current_index := move_list.index
+				move_list.start
+				temp_move_list := move_list.duplicate (current_index)
+				move_list := temp_move_list
+				move_list.go_i_th (current_index)
+			end
 
 			check_for_win
 		end
