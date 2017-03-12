@@ -182,9 +182,24 @@ feature -- User Commands
 feature -- Defensive Queries
 
 	is_valid_move (a_move: INTEGER): BOOLEAN
+		local
+			validity: BOOLEAN
+			i: INTEGER
 		do
+			validity := true
+
 			if a_move >= 1 and a_move <= 9 then
-				Result := across move_list as m all m.item.position /= a_move end
+				from
+					i := 1
+				until
+					i > move_list.index or not validity
+				loop
+					if move_list[i].position = a_move then
+						validity := false
+					end
+					i := i + 1
+				end
+				Result := validity
 			else
 				Result := false
 			end
@@ -371,6 +386,11 @@ feature {BOARD} -- Hidden Queries
 			Result.append (": score for %"")
 			Result.append (player_two.get_name)
 			Result.append ("%" (as O)")
+
+			Result.append ("%NMOVE_LIST_COUNT: ")
+			Result.append (move_list.count.out)
+			Result.append ("%NMOVE_LIST_INDEX: ")
+			Result.append (move_list.index.out)
 		end
 
 	print_opponent (a_player: PLAYER): STRING
