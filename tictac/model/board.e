@@ -56,7 +56,7 @@ feature -- User Commands
 
 	new_game (a_player_one_name: STRING; a_player_two_name: STRING)
 		do
-			if game_won then reset end
+			if game_won or game_in_play then reset end
 
 			player_one.change_name (a_player_one_name)
 			player_one.reset_won
